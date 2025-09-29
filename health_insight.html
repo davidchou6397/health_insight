@@ -375,10 +375,23 @@
         function updateVisitorCounter() {
             const { namespace, counter, apiBase } = COUNTERAPI_CONFIG;
             const visitorElement = document.getElementById('visitorCount');
-            const apiUrl = `${apiBase}/${namespace}/${counter}/up`;
             
-            fetch(apiUrl)
+            // 先檢查當前值
+            fetch(`${apiBase}/${namespace}/${counter}`)
                 .then(response => response.json())
+                .then(data => {
+                    const currentCount = data && (data.count || data.value) ? parseInt(data.count || data.value) : 0;
+                    
+                    // 如果計數小於 49897，設定初始值
+                    if (currentCount < 49897) {
+                        return fetch(`${apiBase}/${namespace}/${counter}/set?value=49897`)
+                            .then(r => r.json());
+                    } else {
+                        // 否則增加計數
+                        return fetch(`${apiBase}/${namespace}/${counter}/up`)
+                            .then(r => r.json());
+                    }
+                })
                 .then(data => {
                     if (data && (data.count !== undefined || data.value !== undefined)) {
                         const count = parseInt(data.count || data.value);
@@ -390,6 +403,7 @@
                 })
                 .catch(error => {
                     console.error('計數器錯誤:', error);
+                    // CORS 錯誤時顯示初始值
                     visitorElement.textContent = '49,897';
                 });
         }
