@@ -348,6 +348,30 @@
             border: 1px solid rgba(102, 126, 234, 0.3);
         }
         
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .debug-panel h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .debug-item {
+            padding: 5px 0;
+            color: #555;
+        }
+        
+        .debug-item strong {
+            color: #333;
+        }
+        
         @media (max-width: 768px) {
             .top-bar {
                 flex-direction: column;
@@ -450,6 +474,12 @@
                 <h3 id="healthScoreTitle">📈 整體健康度評估</h3>
                 <div class="health-score" id="healthScore">--</div>
                 <p id="healthSummary">載入中...</p>
+            </div>
+            
+            <!-- 分析數據顯示面板 -->
+            <div class="debug-panel" id="debugPanel" style="display: none;">
+                <h4>🔍 分析數據詳情</h4>
+                <div id="debugInfo"></div>
             </div>
         </div>
     </div>
@@ -941,8 +971,44 @@
             return 1 - Math.abs(leftAvgX - rightAvgX) * 2;
         }
         
-        // 顯示結果
+        // 顯示結果（含分析數據）
         function displayResults(analysis) {
+            // 顯示調試面板
+            const debugPanel = document.getElementById('debugPanel');
+            const debugInfo = document.getElementById('debugInfo');
+            debugPanel.style.display = 'block';
+            
+            // 顯示詳細分析數據
+            let debugHTML = '';
+            debugHTML += `<div class="debug-item"><strong>分析時間:</strong> ${new Date().toLocaleString('zh-TW')}</div>`;
+            debugHTML += `<div class="debug-item"><strong>檢測到的關鍵點數量:</strong> ${currentLandmarks ? currentLandmarks.length : 0}</div>`;
+            debugHTML += `<div class="debug-item"><strong>健康分數:</strong> ${analysis.healthScore}/100</div>`;
+            debugHTML += `<div class="debug-item"><strong>姿勢問題數量:</strong> ${Object.values(analysis.postureMetrics).filter(v => v !== '正常' && v !== '良好' && v !== '穩定').length}</div>`;
+            debugHTML += `<div class="debug-item"><strong>高優先級建議:</strong> ${analysis.recommendations.filter(r => r.priority === '高').length}</div>`;
+            debugHTML += `<div class="debug-item"><strong>中優先級建議:</strong> ${analysis.recommendations.filter(r => r.priority === '中').length}</div>`;
+            debugHTML += `<div class="debug-item"><strong>低優先級建議:</strong> ${analysis.recommendations.filter(r => r.priority === '低').length}</div>`;
+            
+            // 顯示具體問題
+            const issues = [];
+            Object.entries(analysis.postureMetrics).forEach(([key, value]) => {
+                if (value !== '正常' && value !== '良好' && value !== '穩定') {
+                    issues.push(`${key}: ${value}`);
+                }
+            });
+            
+            if (issues.length > 0) {
+                debugHTML += `<div class="debug-item"><strong>檢測到的問題:</strong><br>`;
+                issues.forEach(issue => {
+                    debugHTML += `&nbsp;&nbsp;• ${issue}<br>`;
+                });
+                debugHTML += `</div>`;
+            } else {
+                debugHTML += `<div class="debug-item"><strong>檢測到的問題:</strong> 無明顯問題</div>`;
+            }
+            
+            debugInfo.innerHTML = debugHTML;
+            
+            // 原有的顯示邏輯
             const postureMetricsDiv = document.getElementById('postureMetrics');
             postureMetricsDiv.innerHTML = '';
             
